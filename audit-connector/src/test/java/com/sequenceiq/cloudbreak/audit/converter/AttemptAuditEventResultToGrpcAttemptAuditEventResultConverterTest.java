@@ -1,17 +1,24 @@
 package com.sequenceiq.cloudbreak.audit.converter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.util.List;
-
-import org.junit.jupiter.api.Test;
-
 import com.cloudera.thunderhead.service.audit.AuditProto;
 import com.sequenceiq.cloudbreak.audit.model.AttemptAuditEventResult;
 import com.sequenceiq.cloudbreak.audit.model.ResultApiRequestData;
 import com.sequenceiq.cloudbreak.audit.model.ResultEventData;
 import com.sequenceiq.cloudbreak.audit.model.ResultServiceEventData;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class AttemptAuditEventResultToGrpcAttemptAuditEventResultConverterTest {
 
@@ -35,7 +42,15 @@ class AttemptAuditEventResultToGrpcAttemptAuditEventResultConverterTest {
 
     private static final String RESPONSE_PARAMETERS = "responseParameters";
 
-    private final AttemptAuditEventResultToGrpcAttemptAuditEventResultConverter underTest = new AttemptAuditEventResultToGrpcAttemptAuditEventResultConverter();
+    private AttemptAuditEventResultToGrpcAttemptAuditEventResultConverter underTest;
+
+    private AttemptAuditEventResultBuilderUpdater mockAttemptAuditEventResultBuilderUpdater;
+
+    @BeforeEach
+    void setUp() {
+        underTest = new AttemptAuditEventResultToGrpcAttemptAuditEventResultConverter(new LinkedHashMap<>());
+        mockAttemptAuditEventResultBuilderUpdater = mock(AttemptAuditEventResultBuilderUpdater.class);
+    }
 
     @Test
     void testPreventPossibleNullValuesNoResult() {
@@ -49,7 +64,18 @@ class AttemptAuditEventResultToGrpcAttemptAuditEventResultConverterTest {
                 .withResourceCrns(CRNS)
                 .build();
         AttemptAuditEventResult source = makeMinimalAttemptAuditEventResult(resultServiceEventData);
+        underTest = new AttemptAuditEventResultToGrpcAttemptAuditEventResultConverter(createMockUtilizer(ResultServiceEventData.class));
+
         underTest.convert(source);
+        verify(mockAttemptAuditEventResultBuilderUpdater, times(1)).updateAttemptAuditEventResultBuilderWithEventData(any(), any());
+    }
+
+    @Test
+    void testWhenResultEventDataIsNullThenNoUtilizerCallHappens() {
+        AttemptAuditEventResult source = makeMinimalAttemptAuditEventResult(null);
+
+        underTest.convert(source);
+        verify(mockAttemptAuditEventResultBuilderUpdater, never()).updateAttemptAuditEventResultBuilderWithEventData(any(), any());
     }
 
     @Test
@@ -68,22 +94,22 @@ class AttemptAuditEventResultToGrpcAttemptAuditEventResultConverterTest {
                 .withResultDetails(RESULT_DETAILS)
                 .build();
         AttemptAuditEventResult source = makeAttemptAuditEventResult(rsed);
+        underTest = new AttemptAuditEventResultToGrpcAttemptAuditEventResultConverter(createMockUtilizer(ResultServiceEventData.class));
 
         AuditProto.AttemptAuditEventResult target = underTest.convert(source);
         assertGeneric(target);
-        assertThat(target.getEventTypeCase()).isEqualTo(AuditProto.AttemptAuditEventResult.EventTypeCase.RESULTSERVICEEVENTDATA);
-        assertThat(target.getResultServiceEventData().getResourceCrnList()).hasSameElementsAs(CRNS);
-        assertThat(target.getResultServiceEventData().getResultDetails()).isEqualTo(RESULT_DETAILS);
+        verify(mockAttemptAuditEventResultBuilderUpdater, times(1)).updateAttemptAuditEventResultBuilderWithEventData(any(), any());
     }
 
     @Test
     void convertWithResultApiRequestData() {
         ResultApiRequestData rsed = ResultApiRequestData.builder().withResponseParameters(RESPONSE_PARAMETERS).build();
         AttemptAuditEventResult source = makeAttemptAuditEventResult(rsed);
+        underTest = new AttemptAuditEventResultToGrpcAttemptAuditEventResultConverter(createMockUtilizer(ResultApiRequestData.class));
 
         AuditProto.AttemptAuditEventResult target = underTest.convert(source);
         assertGeneric(target);
-        assertThat(target.getEventTypeCase()).isEqualTo(AuditProto.AttemptAuditEventResult.EventTypeCase.RESULTAPIREQUESTDATA);
+        verify(mockAttemptAuditEventResultBuilderUpdater, times(1)).updateAttemptAuditEventResultBuilderWithEventData(any(), any());
     }
 
     @Test
@@ -122,4 +148,9 @@ class AttemptAuditEventResultToGrpcAttemptAuditEventResultConverterTest {
                 .withResultEventData(resultEventData)
                 .build();
     }
+
+    private Map<Class, AttemptAuditEventResultBuilderUpdater> createMockUtilizer(Class clazz) {
+        return Map.of(clazz, mockAttemptAuditEventResultBuilderUpdater);
+    }
+
 }

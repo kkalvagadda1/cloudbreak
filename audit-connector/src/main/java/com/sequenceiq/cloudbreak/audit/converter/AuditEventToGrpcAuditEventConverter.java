@@ -1,24 +1,32 @@
 package com.sequenceiq.cloudbreak.audit.converter;
 
-import static com.sequenceiq.cloudbreak.util.ConditionBasedEvaluatorUtil.doIfTrue;
-import static com.sequenceiq.cloudbreak.util.UuidUtil.uuidSupplier;
-
-import java.util.Optional;
-
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Component;
-
 import com.cloudera.thunderhead.service.audit.AuditProto;
 import com.sequenceiq.cloudbreak.audit.model.ActorBase;
 import com.sequenceiq.cloudbreak.audit.model.ActorCrn;
 import com.sequenceiq.cloudbreak.audit.model.ActorService;
-import com.sequenceiq.cloudbreak.audit.model.ApiRequestData;
 import com.sequenceiq.cloudbreak.audit.model.AuditEvent;
 import com.sequenceiq.cloudbreak.audit.model.EventData;
-import com.sequenceiq.cloudbreak.audit.model.ServiceEventData;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.Optional;
+
+import static com.sequenceiq.cloudbreak.util.ConditionBasedEvaluatorUtil.doIfTrue;
+import static com.sequenceiq.cloudbreak.util.UuidUtil.uuidSupplier;
 
 @Component
 public class AuditEventToGrpcAuditEventConverter {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuditEventToGrpcAuditEventConverter.class);
+
+    private final Map<Class, AuditEventBuilderUpdater> eventDataUtilizer;
+
+    public AuditEventToGrpcAuditEventConverter(Map<Class, AuditEventBuilderUpdater> eventDataUtilizer) {
+        this.eventDataUtilizer = eventDataUtilizer;
+    }
 
     public AuditProto.AuditEvent convert(AuditEvent source) {
         String id = Optional.ofNullable(source.getId()).orElseGet(uuidSupplier());
@@ -55,25 +63,14 @@ public class AuditEventToGrpcAuditEventConverter {
 
     private void updateAuditEventData(AuditProto.AuditEvent.Builder auditEventBuilder, EventData source) {
         if (source == null) {
+            LOGGER.debug("No EventData has provided to update AuditEventData hence no operation will be done.");
             return;
         }
-
-        if (source instanceof ServiceEventData) {
-            ServiceEventData serviceEventData = (ServiceEventData) source;
-            AuditProto.ServiceEventData.Builder serviceEventDataBuilder = AuditProto.ServiceEventData.newBuilder();
-            doIfTrue(serviceEventData.getEventDetails(), StringUtils::isNotEmpty, serviceEventDataBuilder::setEventDetails);
-            doIfTrue(serviceEventData.getVersion(), StringUtils::isNotEmpty, serviceEventDataBuilder::setDetailsVersion);
-            auditEventBuilder.setServiceEventData(serviceEventDataBuilder.build());
-        } else if (source instanceof ApiRequestData) {
-            ApiRequestData apiRequestData = (ApiRequestData) source;
-            AuditProto.ApiRequestData.Builder apiRequestDataBuilder = AuditProto.ApiRequestData.newBuilder()
-                    .setMutating(apiRequestData.isMutating());
-            doIfTrue(apiRequestData.getApiVersion(), StringUtils::isNotEmpty, apiRequestDataBuilder::setApiVersion);
-            doIfTrue(apiRequestData.getRequestParameters(), StringUtils::isNotEmpty, apiRequestDataBuilder::setRequestParameters);
-            doIfTrue(apiRequestData.getUserAgent(), StringUtils::isNotEmpty, apiRequestDataBuilder::setUserAgent);
-            auditEventBuilder.setApiRequestData(apiRequestDataBuilder.build());
+        if (eventDataUtilizer.containsKey(source.getClass())) {
+            eventDataUtilizer.get(source.getClass()).updateAuditEventBuilderWithEventData(auditEventBuilder, source);
         } else {
             throw new IllegalArgumentException("EventData has an invalid class: " + source.getClass().getName());
         }
     }
+
 }

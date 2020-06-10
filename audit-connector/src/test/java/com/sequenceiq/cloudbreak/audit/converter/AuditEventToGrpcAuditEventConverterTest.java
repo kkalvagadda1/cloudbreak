@@ -1,10 +1,5 @@
 package com.sequenceiq.cloudbreak.audit.converter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import org.junit.jupiter.api.Test;
-
 import com.cloudera.thunderhead.service.audit.AuditProto;
 import com.sequenceiq.cloudbreak.audit.model.ActorBase;
 import com.sequenceiq.cloudbreak.audit.model.ActorCrn;
@@ -15,6 +10,19 @@ import com.sequenceiq.cloudbreak.audit.model.AuditEventName;
 import com.sequenceiq.cloudbreak.audit.model.EventData;
 import com.sequenceiq.cloudbreak.audit.model.ServiceEventData;
 import com.sequenceiq.cloudbreak.auth.altus.Crn;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class AuditEventToGrpcAuditEventConverterTest {
 
@@ -46,14 +54,27 @@ class AuditEventToGrpcAuditEventConverterTest {
 
     private static final String USER_AGENT = "userAgent";
 
-    private final AuditEventToGrpcAuditEventConverter underTest = new AuditEventToGrpcAuditEventConverter();
+    private AuditEventToGrpcAuditEventConverter underTest;
+
+    private AuditEventBuilderUpdater mockAuditEventBuilderUpdater;
+
+    @BeforeEach
+    void setUp() {
+        mockAuditEventBuilderUpdater = mock(AuditEventBuilderUpdater.class);
+        underTest = new AuditEventToGrpcAuditEventConverter(new LinkedHashMap<>());
+    }
 
     @Test
-    void testPreventPossibleNullValuesInSouceServiceEventData() {
+    void testPreventPossibleNullValuesInSourceServiceEventData() {
         ActorBase actor = ActorCrn.builder().withActorCrn(USER_CRN).build();
         EventData eventData = ServiceEventData.builder().build();
         AuditEvent source = makeMinimalAuditEvent(actor, eventData);
+
+        underTest = new AuditEventToGrpcAuditEventConverter(createMockUtilizer(ServiceEventData.class));
+
         underTest.convert(source);
+
+        verify(mockAuditEventBuilderUpdater, times(1)).updateAuditEventBuilderWithEventData(any(), any());
     }
 
     @Test
@@ -61,7 +82,11 @@ class AuditEventToGrpcAuditEventConverterTest {
         ActorBase actor = ActorCrn.builder().withActorCrn(USER_CRN).build();
         EventData eventData = ApiRequestData.builder().build();
         AuditEvent source = makeMinimalAuditEvent(actor, eventData);
+
+        underTest = new AuditEventToGrpcAuditEventConverter(createMockUtilizer(ApiRequestData.class));
+
         underTest.convert(source);
+        verify(mockAuditEventBuilderUpdater, times(1)).updateAuditEventBuilderWithEventData(any(), any());
     }
 
     @Test
@@ -97,11 +122,11 @@ class AuditEventToGrpcAuditEventConverterTest {
                 .build();
         AuditEvent source = makeAuditEvent(actor, eventData);
 
+        underTest = new AuditEventToGrpcAuditEventConverter(createMockUtilizer(ServiceEventData.class));
+
         AuditProto.AuditEvent target = underTest.convert(source);
         assertGeneric(target);
-        assertThat(target.getEventTypeCase()).isEqualTo(AuditProto.AuditEvent.EventTypeCase.SERVICEEVENTDATA);
-        assertThat(target.getServiceEventData().getDetailsVersion()).isEqualTo(SERVICE_EVENT_VERSION);
-        assertThat(target.getServiceEventData().getEventDetails()).isEqualTo(SERVICE_EVENT_DETAILS);
+        verify(mockAuditEventBuilderUpdater, times(1)).updateAuditEventBuilderWithEventData(any(), any());
     }
 
     @Test
@@ -115,13 +140,20 @@ class AuditEventToGrpcAuditEventConverterTest {
                 .build();
         AuditEvent source = makeAuditEvent(actor, eventData);
 
+        underTest = new AuditEventToGrpcAuditEventConverter(createMockUtilizer(ApiRequestData.class));
+
         AuditProto.AuditEvent target = underTest.convert(source);
         assertGeneric(target);
-        assertThat(target.getEventTypeCase()).isEqualTo(AuditProto.AuditEvent.EventTypeCase.APIREQUESTDATA);
-        assertThat(target.getApiRequestData().getApiVersion()).isEqualTo(API_VERSION);
-        assertThat(target.getApiRequestData().getMutating()).isEqualTo(MUTATING);
-        assertThat(target.getApiRequestData().getRequestParameters()).isEqualTo(REQUEST_PARAMETERS);
-        assertThat(target.getApiRequestData().getUserAgent()).isEqualTo(USER_AGENT);
+        verify(mockAuditEventBuilderUpdater, times(1)).updateAuditEventBuilderWithEventData(any(), any());
+    }
+
+    @Test
+    void testWhenResultEventDataIsNullThenNoUtilizerCallHappens() {
+        ActorBase actor = ActorCrn.builder().withActorCrn(USER_CRN).build();
+        AuditEvent source = makeMinimalAuditEvent(actor, null);
+
+        underTest.convert(source);
+        verify(mockAuditEventBuilderUpdater, never()).updateAuditEventBuilderWithEventData(any(), any());
     }
 
     @Test
@@ -178,4 +210,9 @@ class AuditEventToGrpcAuditEventConverterTest {
                 .withEventData(eventData)
                 .build();
     }
+
+    private Map<Class, AuditEventBuilderUpdater> createMockUtilizer(Class clazz) {
+        return Map.of(clazz, mockAuditEventBuilderUpdater);
+    }
+
 }
