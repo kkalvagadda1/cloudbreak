@@ -1,6 +1,7 @@
 package com.sequenceiq.it.cloudbreak.testcase.mock.clouderamanager;
 
 
+import static com.sequenceiq.it.cloudbreak.context.RunningParameter.key;
 import static com.sequenceiq.it.cloudbreak.mock.model.ClouderaManagerMock.PROFILE_RETURN_HTTP_500;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
@@ -120,6 +121,7 @@ public class CMUpscaleWithHttp500ResponsesTest extends AbstractClouderaManagerTe
     public void testUpscale(MockedTestContext testContext) {
         String blueprintName = testContext.get(BlueprintTestDto.class).getRequest().getName();
         String clusterName = resourcePropertyProvider().getName();
+        String stack = resourcePropertyProvider().getName();
 
         int addedNodes = desiredWorkerCount - originalWorkerCount;
 
@@ -132,7 +134,8 @@ public class CMUpscaleWithHttp500ResponsesTest extends AbstractClouderaManagerTe
                 .withClouderaManager(CLOUDERA_MANAGER_KEY)
                 .given(StackTestDto.class).withCluster(CLUSTER_KEY)
                 .withName(clusterName)
-                .when(stackTestClient.createV4())
+                .when(stackTestClient.createV4(), key(stack))
+                .awaitForFlow(key(stack))
                 .await(STACK_AVAILABLE)
                 .when(StackScalePostAction.valid().withDesiredCount(desiredWorkerCount).withForced(Boolean.FALSE))
                 .await(StackTestDto.class, STACK_AVAILABLE, POLLING_INTERVAL)
@@ -144,7 +147,7 @@ public class CMUpscaleWithHttp500ResponsesTest extends AbstractClouderaManagerTe
                 .then(MockVerification.verify(POST, ITResponse.SALT_API_ROOT + "/run").bodyContains("fun=network.ipaddrs").atLeast(1))
                 .then(MockVerification.verify(POST, ITResponse.SALT_API_ROOT + "/run").bodyContains("fun=saltutil.sync_all").atLeast(1))
                 .then(MockVerification.verify(POST, ITResponse.SALT_API_ROOT + "/run").bodyContains("fun=mine.update").atLeast(1))
-                .then(MockVerification.verify(POST, ITResponse.SALT_API_ROOT + "/run").bodyContains("fun=state.highstate").atLeast(2))
+                .then(MockVerification.verify(POST, ITResponse.SALT_API_ROOT + "/run").bodyContains("fun=state.highstate").atLeast(1))
                 .then(MockVerification.verify(POST, ITResponse.SALT_API_ROOT + "/run").bodyContains("fun=grains.remove").exactTimes(4))
                 .then(MockVerification.verify(GET,
                         new ClouderaManagerPathResolver(LIST_HOSTS)

@@ -1,5 +1,6 @@
 package com.sequenceiq.it.cloudbreak.testcase.mock.clouderamanager;
 
+import static com.sequenceiq.it.cloudbreak.context.RunningParameter.key;
 import static com.sequenceiq.it.cloudbreak.mock.model.ClouderaManagerMock.PROFILE_RETURN_HTTP_500;
 
 import java.math.BigDecimal;
@@ -65,6 +66,7 @@ public class CMDownscaleWithHttp500ResponsesTest extends AbstractIntegrationTest
     public void testDownscale(MockedTestContext testContext) {
         ApiParcel parcel = parcelGeneratorUtil.getActivatedCDHParcel();
         String clusterName = resourcePropertyProvider().getName();
+        String stack = resourcePropertyProvider().getName();
         parcelMockActivatorUtil.mockActivateWithDefaultParcels(testContext, clusterName, parcel);
         SetupCmScalingMock mock = new SetupCmScalingMock();
         mock.configure(testContext, 3, 15, 6);
@@ -80,9 +82,11 @@ public class CMDownscaleWithHttp500ResponsesTest extends AbstractIntegrationTest
                 .given(StackTestDto.class)
                 .withName(clusterName)
                 .withCluster("cmpclusterkey")
-                .when(stackTestClient.createV4())
+                .when(stackTestClient.createV4(), key(stack))
+                .awaitForFlow(key(stack))
                 .await(STACK_AVAILABLE)
                 .when(StackScalePostAction.valid().withDesiredCount(mock.getDesiredWorkerCount()))
+                .awaitForFlow(key(stack))
                 .await(StackTestDto.class, STACK_AVAILABLE, POLLING_INTERVAL)
                 .when(StackScalePostAction.valid().withDesiredCount(mock.getDesiredBackscaledWorkerCount()))
                 .await(StackTestDto.class, STACK_AVAILABLE, POLLING_INTERVAL)
