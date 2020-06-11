@@ -1,12 +1,14 @@
 package com.sequenceiq.datalake.flow;
 
-import static com.sequenceiq.datalake.flow.datalake.upgrade.DatalakeUpgradeEvent.DATALAKE_UPGRADE_EVENT;
 import static com.sequenceiq.datalake.flow.create.SdxCreateEvent.RDS_WAIT_EVENT;
+import static com.sequenceiq.datalake.flow.datalake.upgrade.DatalakeUpgradeEvent.DATALAKE_UPGRADE_EVENT;
 import static com.sequenceiq.datalake.flow.delete.SdxDeleteEvent.SDX_DELETE_EVENT;
 import static com.sequenceiq.datalake.flow.repair.SdxRepairEvent.SDX_REPAIR_EVENT;
 import static com.sequenceiq.datalake.flow.start.SdxStartEvent.SDX_START_EVENT;
 import static com.sequenceiq.datalake.flow.stop.SdxStopEvent.SDX_STOP_EVENT;
 import static com.sequenceiq.datalake.flow.upgrade.SdxOsUpgradeEvent.SDX_UPGRADE_EVENT;
+import static com.sequenceiq.datalake.flow.dr.DatalakeDatabaseDrEvent.DATALAKE_DATABASE_BACKUP_EVENT;
+import static com.sequenceiq.datalake.flow.dr.DatalakeDatabaseDrEvent.DATALAKE_DATABASE_RESTORE_EVENT;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -23,6 +25,9 @@ import com.sequenceiq.cloudbreak.exception.FlowNotAcceptedException;
 import com.sequenceiq.cloudbreak.exception.FlowsAlreadyRunningException;
 import com.sequenceiq.datalake.flow.datalake.upgrade.event.DatalakeUpgradeStartEvent;
 import com.sequenceiq.datalake.flow.delete.event.SdxDeleteStartEvent;
+import com.sequenceiq.datalake.flow.dr.event.DatalakeDatabaseBackupStartEvent;
+import com.sequenceiq.datalake.flow.dr.event.DatalakeDatabaseDrStartBaseEvent;
+import com.sequenceiq.datalake.flow.dr.event.DatalakeDatabaseRestoreStartEvent;
 import com.sequenceiq.datalake.flow.repair.event.SdxRepairStartEvent;
 import com.sequenceiq.datalake.flow.start.event.SdxStartStartEvent;
 import com.sequenceiq.datalake.flow.stop.event.SdxStartStopEvent;
@@ -92,6 +97,18 @@ public class SdxReactorFlowManager {
         return notify(selector, new SdxStartStopEvent(selector, sdxId, userId));
     }
 
+    public String triggerDatalakeDatabaseBackupFlow(Long sdxId, String databaseHost, String backupLocation) {
+        String selector = DATALAKE_DATABASE_BACKUP_EVENT.event();
+        String userId = ThreadBasedUserCrnProvider.getUserCrn();
+        return notifyDatabaseDrEvent(selector, new DatalakeDatabaseBackupStartEvent(selector, sdxId, userId, databaseHost, backupLocation));
+    }
+
+    public String triggerDatalakeDatabaseRestoreFlow(Long sdxId, String databaseHost, String backupLocation) {
+        String selector = DATALAKE_DATABASE_RESTORE_EVENT.event();
+        String userId = ThreadBasedUserCrnProvider.getUserCrn();
+        return notifyDatabaseDrEvent(selector, new DatalakeDatabaseRestoreStartEvent(selector, sdxId, userId, databaseHost, backupLocation));
+    }
+
     private FlowIdentifier notify(String selector, SdxEvent acceptable) {
         Map<String, Object> flowTriggerUserCrnHeader = Map.of(FlowConstants.FLOW_TRIGGER_USERCRN, acceptable.getUserId());
         Event<Acceptable> event = eventFactory.createEventWithErrHandler(flowTriggerUserCrnHeader, acceptable);
@@ -119,5 +136,31 @@ public class SdxReactorFlowManager {
             throw new CloudbreakApiException(e.getMessage());
         }
 
+    }
+
+    String notifyDatabaseDrEvent(String selector,  DatalakeDatabaseDrStartBaseEvent acceptable) {
+        Map<String, Object> flowTriggerUserCrnHeader = Map.of(FlowConstants.FLOW_TRIGGER_USERCRN, acceptable.getUserId());
+        Event<Acceptable> event = eventFactory.createEventWithErrHandler(flowTriggerUserCrnHeader, acceptable);
+
+        reactor.notify(selector, event);
+        try {
+            FlowAcceptResult accepted = (FlowAcceptResult) event.getData().accepted().await(WAIT_FOR_ACCEPT, TimeUnit.SECONDS);
+            if (accepted == null) {
+                throw new FlowNotAcceptedException(String.format("Timeout happened when trying to start the flow for sdx cluster %s.",
+                        event.getData().getResourceId()));
+            } else {
+                switch (accepted.getResultType()) {
+                    case ALREADY_EXISTING_FLOW:
+                        throw new FlowsAlreadyRunningException(String.format("Sdx cluster %s has flows under operation, request not allowed.",
+                                event.getData().getResourceId()));
+                    case RUNNING_IN_FLOW:
+                        return acceptable.getDrStatus().getOperationId();
+                    default:
+                        throw new IllegalStateException("Unsupported accept result type: " + accepted.getClass());
+                }
+            }
+        } catch (InterruptedException e) {
+            throw new CloudbreakApiException(e.getMessage());
+        }
     }
 }
