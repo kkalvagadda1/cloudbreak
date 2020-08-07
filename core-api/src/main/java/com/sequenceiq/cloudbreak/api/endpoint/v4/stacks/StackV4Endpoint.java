@@ -305,7 +305,8 @@ public interface StackV4Endpoint {
     @ApiOperation(value = DATABASE_BACKUP, nickname = "databaseBackup")
     BackupV4Response backupDatabaseByName(@PathParam("workspaceId") Long workspaceId, @PathParam("name") String name,
             @QueryParam("backupLocation") String backupLocation, @QueryParam("backupId") String backupId,
-            @AccountId @QueryParam("accountId") String accountId);
+            @AccountId @QueryParam("accountId") String accountId,
+            @QueryParam("rangerAdminGroup") String rangerAdminGroup);
 
     @POST
     @Path("{name}/database_restore")
@@ -313,5 +314,6 @@ public interface StackV4Endpoint {
     @ApiOperation(value = DATABASE_RESTORE, nickname = "databaseRestore")
     RestoreV4Response restoreDatabaseByName(@PathParam("workspaceId") Long workspaceId, @PathParam("name") String name,
             @QueryParam("backupLocation") String backupLocation, @QueryParam("backupId") String backupId,
-            @AccountId @QueryParam("accountId") String accountId);
+            @AccountId @QueryParam("accountId") String accountId,
+            @QueryParam("rangerAdminGroup") String rangerAdminGroup);
 }

@@ -40,6 +40,8 @@ public class SdxDatabaseDrServiceTest {
 
     private static final String BACKUPLOCATION = "location/of/backup";
 
+    private static final String RANGERADMINGROUP = "ranger_admin_group";
+
     private static final String DBHOST = "loclhost";
 
     private static final String USER_CRN = "crn:cdp:iam:us-west-1:"
@@ -77,7 +79,7 @@ public class SdxDatabaseDrServiceTest {
     @Test
     public void triggerDatabaseBackupSuccess() {
         when(sdxReactorFlowManager.triggerDatalakeDatabaseBackupFlow(Mockito.any(DatalakeDatabaseBackupStartEvent.class))).thenReturn(flowIdentifier);
-        SdxDatabaseBackupResponse backupResponse = sdxDatabaseDrService.triggerDatabaseBackup(sdxCluster, BACKUPID, BACKUPLOCATION);
+        SdxDatabaseBackupResponse backupResponse = sdxDatabaseDrService.triggerDatabaseBackup(sdxCluster, BACKUPID, BACKUPLOCATION, RANGERADMINGROUP);
         Assert.assertEquals(flowIdentifier, backupResponse.getFlowIdentifier());
         ArgumentCaptor<DatalakeDatabaseBackupStartEvent> eventArgumentCaptor = ArgumentCaptor.forClass(DatalakeDatabaseBackupStartEvent.class);
         verify(sdxReactorFlowManager, times(1)).triggerDatalakeDatabaseBackupFlow(eventArgumentCaptor.capture());
@@ -91,7 +93,7 @@ public class SdxDatabaseDrServiceTest {
     @Test
     public void triggerDatabaseRestoreSuccess() {
         when(sdxReactorFlowManager.triggerDatalakeDatabaseRestoreFlow(Mockito.any(DatalakeDatabaseRestoreStartEvent.class))).thenReturn(flowIdentifier);
-        SdxDatabaseRestoreResponse restoreResponse = sdxDatabaseDrService.triggerDatabaseRestore(sdxCluster, BACKUPID, BACKUPLOCATION);
+        SdxDatabaseRestoreResponse restoreResponse = sdxDatabaseDrService.triggerDatabaseRestore(sdxCluster, BACKUPID, BACKUPLOCATION, RANGERADMINGROUP);
         Assert.assertEquals(flowIdentifier, restoreResponse.getFlowIdentifier());
         ArgumentCaptor<DatalakeDatabaseRestoreStartEvent> eventArgumentCaptor = ArgumentCaptor.forClass(DatalakeDatabaseRestoreStartEvent.class);
         verify(sdxReactorFlowManager, times(1)).triggerDatalakeDatabaseRestoreFlow(eventArgumentCaptor.capture());

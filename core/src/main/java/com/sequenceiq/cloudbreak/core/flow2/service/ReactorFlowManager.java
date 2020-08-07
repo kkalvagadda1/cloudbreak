@@ -274,14 +274,14 @@ public class ReactorFlowManager {
         return reactorNotifier.notify(stackId, selector, new StackEvent(selector, stackId));
     }
 
-    public FlowIdentifier triggerDatalakeDatabaseBackup(Long stackId, String location, String backupId) {
+    public FlowIdentifier triggerDatalakeDatabaseBackup(Long stackId, String location, String backupId, String rangerAdminGroup) {
         String selector = DATABASE_BACKUP_EVENT.event();
-        return reactorNotifier.notify(stackId, selector, new DatabaseBackupTriggerEvent(selector, stackId, location, backupId));
+        return reactorNotifier.notify(stackId, selector, new DatabaseBackupTriggerEvent(selector, stackId, location, backupId, rangerAdminGroup));
     }
 
-    public FlowIdentifier triggerDatalakeDatabaseRestore(Long stackId, String location, String backupId) {
+    public FlowIdentifier triggerDatalakeDatabaseRestore(Long stackId, String location, String backupId, String rangerAdminGroup) {
         String selector = DATABASE_RESTORE_EVENT.event();
-        return reactorNotifier.notify(stackId, selector, new DatabaseRestoreTriggerEvent(selector, stackId, location, backupId));
+        return reactorNotifier.notify(stackId, selector, new DatabaseRestoreTriggerEvent(selector, stackId, location, backupId, rangerAdminGroup));
     }
 
 }

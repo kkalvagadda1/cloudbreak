@@ -1,8 +1,22 @@
 package com.sequenceiq.cloudbreak.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
+
+import java.util.Collections;
+import java.util.Optional;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.rules.ExpectedException;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sequenceiq.cloudbreak.api.endpoint.v4.dto.NameOrCrn;
 import com.sequenceiq.cloudbreak.common.service.TransactionService;
@@ -17,19 +31,6 @@ import com.sequenceiq.cloudbreak.structuredevent.event.CloudbreakEventService;
 import com.sequenceiq.cloudbreak.validation.ValidationResult;
 import com.sequenceiq.flow.api.model.FlowIdentifier;
 import com.sequenceiq.flow.core.FlowLogService;
-
-import java.util.Collections;
-import java.util.Optional;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.rules.ExpectedException;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class DatabaseBackupRestoreServiceTest {
@@ -88,9 +89,10 @@ public class DatabaseBackupRestoreServiceTest {
         when(stackService.findStackByNameAndWorkspaceId(any(), anyLong())).thenReturn(Optional.of(stack));
         when(stackService.getByNameOrCrnInWorkspace(any(), anyLong())).thenReturn(stack);
         when(flowLogService.findAllByResourceIdAndFinalizedIsFalseOrderByCreatedDesc(1L)).thenReturn(Collections.EMPTY_LIST);
-        when(flowManager.triggerDatalakeDatabaseBackup(anyLong(), any(), any())).thenReturn(FlowIdentifier.notTriggered());
+        when(flowManager.triggerDatalakeDatabaseBackup(anyLong(), eq("path/to/backup"), eq("backup-id"), eq("ranger-admin")))
+                .thenReturn(FlowIdentifier.notTriggered());
 
-        service.backupDatabase(WORKSPACE_ID, ofName, null, null);
+        service.backupDatabase(WORKSPACE_ID, ofName, "path/to/backup", "backup-id", "ranger-admin");
     }
 
     @Test
@@ -100,9 +102,10 @@ public class DatabaseBackupRestoreServiceTest {
         when(stackService.findStackByNameAndWorkspaceId(any(), anyLong())).thenReturn(Optional.of(stack));
         when(stackService.getByNameOrCrnInWorkspace(any(), anyLong())).thenReturn(stack);
         when(flowLogService.findAllByResourceIdAndFinalizedIsFalseOrderByCreatedDesc(1L)).thenReturn(Collections.EMPTY_LIST);
-        when(flowManager.triggerDatalakeDatabaseRestore(anyLong(), any(), any())).thenReturn(FlowIdentifier.notTriggered());
+        when(flowManager.triggerDatalakeDatabaseRestore(anyLong(), eq("path/to/backup"), eq("backup-id"), eq("ranger-admin")
+        )).thenReturn(FlowIdentifier.notTriggered());
 
-        service.restoreDatabase(WORKSPACE_ID, ofName, null, null);
+        service.restoreDatabase(WORKSPACE_ID, ofName, "path/to/backup", "backup-id", "ranger-admin");
     }
 
     @Test

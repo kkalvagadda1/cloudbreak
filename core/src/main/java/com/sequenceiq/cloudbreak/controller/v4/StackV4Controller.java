@@ -249,18 +249,18 @@ public class StackV4Controller extends NotificationController implements StackV4
     @Override
     @CheckPermissionByAccount(action = AuthorizationResourceAction.POWERUSER_ONLY)
     public BackupV4Response backupDatabaseByName(Long workspaceId, String name, String backupLocation, String backupId,
-            @AccountId String accountId) {
+            @AccountId String accountId,  String rangerAdminGroup) {
         FlowIdentifier flowIdentifier =
-            stackOperations.backupClusterDatabase(NameOrCrn.ofName(name), workspaceId, backupLocation, backupId);
+            stackOperations.backupClusterDatabase(NameOrCrn.ofName(name), workspaceId, backupLocation, backupId, rangerAdminGroup);
         return new BackupV4Response(flowIdentifier);
     }
 
     @Override
     @CheckPermissionByAccount(action = AuthorizationResourceAction.POWERUSER_ONLY)
     public RestoreV4Response restoreDatabaseByName(Long workspaceId, String name, String backupLocation, String backupId,
-            @AccountId String accountId) {
+            @AccountId String accountId, String rangerAdminGroup) {
         FlowIdentifier flowIdentifier =
-            stackOperations.restoreClusterDatabase(NameOrCrn.ofName(name), workspaceId, backupLocation, backupId);
+            stackOperations.restoreClusterDatabase(NameOrCrn.ofName(name), workspaceId, backupLocation, backupId, rangerAdminGroup);
         return new RestoreV4Response(flowIdentifier);
     }
 }

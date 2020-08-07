@@ -1,5 +1,14 @@
 package com.sequenceiq.cloudbreak.reactor.handler.cluster.dr.restore;
 
+import java.util.Collections;
+import java.util.Set;
+
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.DetailedStackStatus;
 import com.sequenceiq.cloudbreak.common.event.Selectable;
 import com.sequenceiq.cloudbreak.core.bootstrap.service.ClusterDeletionBasedExitCriteriaModel;
@@ -19,15 +28,6 @@ import com.sequenceiq.cloudbreak.service.stack.StackService;
 import com.sequenceiq.cloudbreak.util.StackUtil;
 import com.sequenceiq.flow.event.EventSelectorUtil;
 import com.sequenceiq.flow.reactor.api.handler.ExceptionCatcherEventHandler;
-
-import java.util.Collections;
-import java.util.Set;
-
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 @Component
 public class DatabaseRestoreHandler extends ExceptionCatcherEventHandler<DatabaseRestoreRequest> {
@@ -71,7 +71,8 @@ public class DatabaseRestoreHandler extends ExceptionCatcherEventHandler<Databas
             GatewayConfig gatewayConfig = gatewayConfigService.getGatewayConfig(stack, gatewayInstance, cluster.hasGateway());
             Set<String> gatewayFQDN = Collections.singleton(gatewayInstance.getDiscoveryFQDN());
             ExitCriteriaModel exitModel = ClusterDeletionBasedExitCriteriaModel.clusterDeletionBasedModel(stackId, cluster.getId());
-            SaltConfig saltConfig = saltConfigGenerator.createSaltConfig(request.getBackupLocation(), request.getBackupId(), stack);
+            SaltConfig saltConfig = saltConfigGenerator.createSaltConfig(request.getBackupLocation(), request.getBackupId(), request.getRangerAdminGroup(),
+                    stack);
             hostOrchestrator.restoreDatabase(gatewayConfig, gatewayFQDN, stackUtil.collectReachableNodes(stack), saltConfig, exitModel);
 
             result = new DatabaseRestoreSuccess(stackId);

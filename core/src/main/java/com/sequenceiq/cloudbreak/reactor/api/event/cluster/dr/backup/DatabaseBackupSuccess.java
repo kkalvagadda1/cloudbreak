@@ -5,6 +5,6 @@ import com.sequenceiq.cloudbreak.reactor.api.event.cluster.dr.BackupRestoreEvent
 public class DatabaseBackupSuccess extends BackupRestoreEvent {
 
     public DatabaseBackupSuccess(Long stackId) {
-        super(stackId, null, null);
+        super(stackId, null, null, null);
     }
 }

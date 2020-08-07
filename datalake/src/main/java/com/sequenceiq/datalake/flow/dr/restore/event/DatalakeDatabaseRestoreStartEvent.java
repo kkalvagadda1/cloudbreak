@@ -8,11 +8,14 @@ public class DatalakeDatabaseRestoreStartEvent extends DatalakeDatabaseDrStartBa
 
     private final String backupLocation;
 
+    private final String rangerAdminGroup;
+
     public DatalakeDatabaseRestoreStartEvent(String selector, Long sdxId, String userId,
-            String backupId, String backupLocation) {
+            String backupId, String backupLocation, String rangerAdminGroup) {
         super(selector, sdxId, userId, SdxOperationType.RESTORE);
         this.backupId = backupId;
         this.backupLocation = backupLocation;
+        this.rangerAdminGroup = rangerAdminGroup;
     }
 
     public String getBackupId() {
@@ -23,4 +26,7 @@ public class DatalakeDatabaseRestoreStartEvent extends DatalakeDatabaseDrStartBa
         return backupLocation;
     }
 
+    public String getRangerAdminGroup() {
+        return  rangerAdminGroup;
+    }
 }

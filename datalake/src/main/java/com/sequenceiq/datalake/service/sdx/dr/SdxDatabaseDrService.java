@@ -79,42 +79,46 @@ public class SdxDatabaseDrService {
     @Inject
     private SdxOperationRepository sdxOperationRepository;
 
-    public SdxDatabaseBackupResponse triggerDatabaseBackup(SdxCluster sdxCluster, String backupId, String backupLocation) {
+    public SdxDatabaseBackupResponse triggerDatabaseBackup(SdxCluster sdxCluster, String backupId, String backupLocation, String rangerAdminGroup) {
         MDCBuilder.buildMdcContext(sdxCluster);
-        return triggerDatalakeDatabaseBackupFlow(sdxCluster.getId(), backupId, backupLocation);
+        return triggerDatalakeDatabaseBackupFlow(sdxCluster.getId(), backupId, backupLocation, rangerAdminGroup);
     }
 
-    public SdxDatabaseRestoreResponse triggerDatabaseRestore(SdxCluster sdxCluster, String backupId, String backupLocation) {
+    public SdxDatabaseRestoreResponse triggerDatabaseRestore(SdxCluster sdxCluster, String backupId, String backupLocation, String rangerAdminGroup) {
         MDCBuilder.buildMdcContext(sdxCluster);
-        return triggerDatalakeDatabaseRestoreFlow(sdxCluster.getId(), backupId, backupLocation);
+        return triggerDatalakeDatabaseRestoreFlow(sdxCluster.getId(), backupId, backupLocation, rangerAdminGroup);
     }
 
-    private SdxDatabaseBackupResponse triggerDatalakeDatabaseBackupFlow(Long clusterId, String backupId, String backupLocation) {
+    private SdxDatabaseBackupResponse triggerDatalakeDatabaseBackupFlow(Long clusterId, String backupId, String backupLocation, String rangerAdminGroup) {
         String selector = DATALAKE_DATABASE_BACKUP_EVENT.event();
         String userId = ThreadBasedUserCrnProvider.getUserCrn();
-        DatalakeDatabaseBackupStartEvent startEvent = new DatalakeDatabaseBackupStartEvent(selector, clusterId, userId, backupId, backupLocation);
+        DatalakeDatabaseBackupStartEvent startEvent = new DatalakeDatabaseBackupStartEvent(selector, clusterId, userId,
+                backupId, backupLocation, rangerAdminGroup);
         FlowIdentifier flowIdentifier = sdxReactorFlowManager.triggerDatalakeDatabaseBackupFlow(startEvent);
         return new SdxDatabaseBackupResponse(startEvent.getDrStatus().getOperationId(), flowIdentifier);
     }
 
-    private SdxDatabaseRestoreResponse triggerDatalakeDatabaseRestoreFlow(Long clusterId, String backupId, String backupLocation) {
+    private SdxDatabaseRestoreResponse triggerDatalakeDatabaseRestoreFlow(Long clusterId, String backupId, String backupLocation, String rangerAdminGroup) {
         String selector = DATALAKE_DATABASE_RESTORE_EVENT.event();
         String userId = ThreadBasedUserCrnProvider.getUserCrn();
-        DatalakeDatabaseRestoreStartEvent startEvent = new DatalakeDatabaseRestoreStartEvent(selector, clusterId, userId, backupId, backupLocation);
+        DatalakeDatabaseRestoreStartEvent startEvent = new DatalakeDatabaseRestoreStartEvent(selector, clusterId, userId,
+                backupId, backupLocation, rangerAdminGroup);
         FlowIdentifier flowIdentifier = sdxReactorFlowManager.triggerDatalakeDatabaseRestoreFlow(startEvent);
         return new SdxDatabaseRestoreResponse(startEvent.getDrStatus().getOperationId(), flowIdentifier);
     }
 
-    public void databaseBackup(SdxOperation drStatus, Long clusterId, String backupId, String backupLocation) {
+    public void databaseBackup(SdxOperation drStatus, Long clusterId, String backupId, String backupLocation,
+            String rangerAdminGroup) {
         try {
             sdxOperationRepository.save(drStatus);
             sdxClusterRepository.findById(clusterId).ifPresentOrElse(sdxCluster -> {
                 BackupV4Response backupV4Response = stackV4Endpoint.backupDatabaseByName(0L, sdxCluster.getClusterName(),
-                        backupLocation, backupId, sdxCluster.getAccountId());
+                        backupLocation, backupId, sdxCluster.getAccountId(), rangerAdminGroup);
                 updateSuccessStatus(drStatus.getOperationId(), sdxCluster, backupV4Response.getFlowIdentifier(),
                         SdxOperationStatus.TRIGGERRED);
             }, () -> {
-                updateFailureStatus(drStatus.getOperationId(), clusterId, String.format("SDX cluster with Id [%d] not found", clusterId));
+                updateFailureStatus(drStatus.getOperationId(), clusterId, String.format("SDX cluBackupRestoreSaltConfigGenerator.javaster with Id [%d]" +
+                        " not found", clusterId));
             });
         } catch (WebApplicationException e) {
             String errorMessage = webApplicationExceptionMessageExtractor.getErrorMessage(e);
@@ -123,12 +127,13 @@ public class SdxDatabaseDrService {
         }
     }
 
-    public void databaseRestore(SdxOperation drStatus, Long clusterId, String backupId, String backupLocation) {
+    public void databaseRestore(SdxOperation drStatus, Long clusterId, String backupId, String backupLocation,
+            String rangerAdminGroup) {
         try {
             sdxOperationRepository.save(drStatus);
             sdxClusterRepository.findById(clusterId).ifPresentOrElse(sdxCluster -> {
                 RestoreV4Response restoreV4Response = stackV4Endpoint.restoreDatabaseByName(0L, sdxCluster.getClusterName(),
-                        backupLocation, backupId, sdxCluster.getAccountId());
+                        backupLocation, backupId, sdxCluster.getAccountId(), rangerAdminGroup);
                 updateSuccessStatus(drStatus.getOperationId(), sdxCluster, restoreV4Response.getFlowIdentifier(),
                         SdxOperationStatus.TRIGGERRED);
             }, () -> {

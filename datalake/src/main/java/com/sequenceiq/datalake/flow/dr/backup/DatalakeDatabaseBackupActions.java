@@ -61,7 +61,8 @@ public class DatalakeDatabaseBackupActions {
                 sdxDatabaseDrService.databaseBackup(payload.getDrStatus(),
                         payload.getResourceId(),
                         payload.getBackupId(),
-                        payload.getBackupLocation());
+                        payload.getBackupLocation(),
+                        payload.getRangerAdminGroup());
                 sendEvent(context, DATALAKE_DATABASE_BACKUP_IN_PROGRESS_EVENT.event(), payload);
             }
 

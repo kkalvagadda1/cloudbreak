@@ -12,22 +12,28 @@ public class BackupRestoreContext extends CommonContext {
 
     private final String backupId;
 
-    public BackupRestoreContext(FlowParameters flowParameters, StackEvent event, String backupLocation, String backupId) {
+    private final String rangerAdminGroup;
+
+    public BackupRestoreContext(FlowParameters flowParameters, StackEvent event, String backupLocation, String backupId, String rangerAdminGroup) {
         super(flowParameters);
         this.stackId = event.getResourceId();
         this.backupLocation = backupLocation;
         this.backupId = backupId;
+        this.rangerAdminGroup = rangerAdminGroup;
     }
 
-    public BackupRestoreContext(FlowParameters flowParameters, Long stackId, String backupLocation, String backupId) {
+    public BackupRestoreContext(FlowParameters flowParameters, Long stackId, String backupLocation,
+            String backupId, String rangerAdminGroup) {
         super(flowParameters);
         this.stackId = stackId;
         this.backupLocation = backupLocation;
         this.backupId = backupId;
+        this.rangerAdminGroup = rangerAdminGroup;
     }
 
-    public static BackupRestoreContext from(FlowParameters flowParameters, StackEvent event, String backupLocation, String backupId) {
-        return new BackupRestoreContext(flowParameters, event, backupLocation, backupId);
+    public static BackupRestoreContext from(FlowParameters flowParameters, StackEvent event, String backupLocation,
+            String backupId, String rangerAdminGroup) {
+        return new BackupRestoreContext(flowParameters, event, backupLocation, backupId, rangerAdminGroup);
     }
 
     public Long getStackId() {
@@ -40,5 +46,9 @@ public class BackupRestoreContext extends CommonContext {
 
     public String getBackupId() {
         return backupId;
+    }
+
+    public String getRangerAdminGroup() {
+        return  rangerAdminGroup;
     }
 }

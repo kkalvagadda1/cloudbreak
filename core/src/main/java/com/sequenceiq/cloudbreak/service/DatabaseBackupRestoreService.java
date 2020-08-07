@@ -1,5 +1,11 @@
 package com.sequenceiq.cloudbreak.service;
 
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
 import com.sequenceiq.cloudbreak.api.endpoint.v4.dto.NameOrCrn;
 import com.sequenceiq.cloudbreak.controller.validation.dr.BackupRestoreV4RequestValidator;
 import com.sequenceiq.cloudbreak.core.flow2.service.ReactorFlowManager;
@@ -9,12 +15,6 @@ import com.sequenceiq.cloudbreak.logger.MDCBuilder;
 import com.sequenceiq.cloudbreak.service.stack.StackService;
 import com.sequenceiq.cloudbreak.validation.ValidationResult;
 import com.sequenceiq.flow.api.model.FlowIdentifier;
-
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 @Service
 public class DatabaseBackupRestoreService {
@@ -42,17 +42,17 @@ public class DatabaseBackupRestoreService {
         }
     }
 
-    public FlowIdentifier backupDatabase(Long workspaceId, NameOrCrn nameOrCrn, String location, String backupId) {
+    public FlowIdentifier backupDatabase(Long workspaceId, NameOrCrn nameOrCrn, String location, String backupId, String rangerAdminGroup) {
         Stack stack = stackService.getByNameOrCrnInWorkspace(nameOrCrn, workspaceId);
         MDCBuilder.buildMdcContext(stack);
         LOGGER.info("Initiating database backup flow for stack {}", stack.getId());
-        return flowManager.triggerDatalakeDatabaseBackup(stack.getId(), location, backupId);
+        return flowManager.triggerDatalakeDatabaseBackup(stack.getId(), location, backupId, rangerAdminGroup);
     }
 
-    public FlowIdentifier restoreDatabase(Long workspaceId, NameOrCrn nameOrCrn, String location, String backupId) {
+    public FlowIdentifier restoreDatabase(Long workspaceId, NameOrCrn nameOrCrn, String location, String backupId, String rangerAdminGroup) {
         Stack stack = stackService.getByNameOrCrnInWorkspace(nameOrCrn, workspaceId);
         MDCBuilder.buildMdcContext(stack);
         LOGGER.info("Initiating database restore flow for stack {}", stack.getId());
-        return flowManager.triggerDatalakeDatabaseRestore(stack.getId(), location, backupId);
+        return flowManager.triggerDatalakeDatabaseRestore(stack.getId(), location, backupId, rangerAdminGroup);
     }
 }

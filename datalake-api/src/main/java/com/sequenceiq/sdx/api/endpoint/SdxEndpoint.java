@@ -16,7 +16,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import com.sequenceiq.sdx.api.model.SetRangerCloudIdentityMappingRequest;
 import org.springframework.validation.annotation.Validated;
 
 import com.sequenceiq.cloudbreak.jerseyclient.RetryAndMetrics;
@@ -33,6 +32,7 @@ import com.sequenceiq.sdx.api.model.SdxDatabaseBackupStatusResponse;
 import com.sequenceiq.sdx.api.model.SdxDatabaseRestoreResponse;
 import com.sequenceiq.sdx.api.model.SdxDatabaseRestoreStatusResponse;
 import com.sequenceiq.sdx.api.model.SdxRepairRequest;
+import com.sequenceiq.sdx.api.model.SetRangerCloudIdentityMappingRequest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -176,14 +176,16 @@ public interface SdxEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "backup the database backing datalake ", produces = MediaType.APPLICATION_JSON, nickname = "backupDatabase")
     SdxDatabaseBackupResponse backupDatabaseByName(@PathParam("name") String name,
-            @QueryParam("backupId") String backupId, @QueryParam("backupLocation") String backupLocation);
+            @QueryParam("backupId") String backupId, @QueryParam("backupLocation") String backupLocation,
+            @QueryParam("rangerAdminGroup") String rangerAdminGroup);
 
     @POST
     @Path("{name}/restoreDatabase")
     @Produces(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "restore the database backing datalake ", produces = MediaType.APPLICATION_JSON, nickname = "restoreDatabase")
     SdxDatabaseRestoreResponse restoreDatabaseByName(@PathParam("name") String name,
-            @QueryParam("backupId") String backupId, @QueryParam("backupLocation") String backupLocation);
+            @QueryParam("backupId") String backupId, @QueryParam("backupLocation") String backupLocation,
+            @QueryParam("rangerAdminGroup") String rangerAdminGroup);
 
     @GET
     @Path("{name}/backupDatabaseStatus")

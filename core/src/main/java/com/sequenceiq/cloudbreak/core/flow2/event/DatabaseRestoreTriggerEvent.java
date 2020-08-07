@@ -7,12 +7,12 @@ import reactor.rx.Promise;
 
 public class DatabaseRestoreTriggerEvent extends BackupRestoreEvent {
 
-    public DatabaseRestoreTriggerEvent(String selector, Long stackId, String backupLocation, String backupId) {
-        super(selector, stackId, backupLocation, backupId);
+    public DatabaseRestoreTriggerEvent(String selector, Long stackId, String backupLocation, String backupId, String rangerAdminGroup) {
+        super(selector, stackId, backupLocation, backupId, rangerAdminGroup);
     }
 
     public DatabaseRestoreTriggerEvent(String event, Long resourceId, Promise<AcceptResult> accepted,
-            String backupLocation, String backupId) {
-        super(event, resourceId, accepted, backupLocation, backupId);
+            String backupLocation, String backupId, String rangerAdminGroup) {
+        super(event, resourceId, accepted, backupLocation, backupId, rangerAdminGroup);
     }
 }

@@ -60,7 +60,8 @@ public class DatalakeDatabaseRestoreActions {
                 sdxDatabaseDrService.databaseRestore(payload.getDrStatus(),
                         payload.getResourceId(),
                         payload.getBackupId(),
-                        payload.getBackupLocation());
+                        payload.getBackupLocation(),
+                        payload.getRangerAdminGroup());
                 sendEvent(context, DATALAKE_DATABASE_RESTORE_IN_PROGRESS_EVENT.event(), payload);
             }
 

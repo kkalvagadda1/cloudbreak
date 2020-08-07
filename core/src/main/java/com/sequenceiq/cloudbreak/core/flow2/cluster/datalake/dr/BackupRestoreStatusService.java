@@ -7,15 +7,15 @@ import static com.sequenceiq.cloudbreak.event.ResourceEvent.DATALAKE_DATABASE_RE
 import static com.sequenceiq.cloudbreak.event.ResourceEvent.DATALAKE_DATABASE_RESTORE_FAILED;
 import static com.sequenceiq.cloudbreak.event.ResourceEvent.DATALAKE_DATABASE_RESTORE_FINISHED;
 
+import javax.inject.Inject;
+
+import org.springframework.stereotype.Service;
+
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.DetailedStackStatus;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.Status;
 import com.sequenceiq.cloudbreak.core.flow2.stack.CloudbreakFlowMessageService;
 import com.sequenceiq.cloudbreak.service.StackUpdater;
 import com.sequenceiq.cloudbreak.service.cluster.ClusterService;
-
-import javax.inject.Inject;
-
-import org.springframework.stereotype.Service;
 
 @Service
 public class BackupRestoreStatusService {
